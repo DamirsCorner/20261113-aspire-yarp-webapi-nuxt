@@ -1,13 +1,23 @@
+using Aspire.Hosting.Yarp.Transforms;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
-builder.AddProject<Projects.Api>("api").WithExternalHttpEndpoints();
+var api = builder.AddProject<Projects.Api>("api").WithExternalHttpEndpoints();
 
 #pragma warning disable ASPIREJAVASCRIPT001
-builder
+var nuxt = builder
     .AddViteApp("web", "../../nuxt")
     .WithPnpm()
     .PublishAsPackageScript()
     .WithExternalHttpEndpoints();
 #pragma warning restore ASPIREJAVASCRIPT001
+
+builder
+    .AddYarp("gateway")
+    .WithConfiguration(yarp =>
+    {
+        yarp.AddRoute(nuxt);
+        yarp.AddRoute("/api/{**catch-all}", api).WithTransformPathRemovePrefix("/api");
+    });
 
 builder.Build().Run();
